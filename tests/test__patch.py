@@ -118,6 +118,36 @@ class PatchTest(unittest.TestCase):
 
         self.assertEqual(['New data'], [d['_id'] for d in client1.test.my_collec.find()])
 
+    @unittest.skipIf(
+        not hasattr(pymongo, 'AsyncMongoClient') if _HAVE_PYMONGO else True,
+        'pymongo has no AsyncMongoClient',
+    )
+    @mongomock.patch()
+    def test__async_client(self):
+        import asyncio
+
+        async def _test():
+            async_client = pymongo.AsyncMongoClient()
+            await async_client.db.coll.insert_one({'name': 'Pascal'})
+
+            # Sync and async clients on the same address share the same data.
+            sync_client = pymongo.MongoClient()
+            self.assertEqual('Pascal', sync_client.db.coll.find_one()['name'])
+
+            sync_client.db.coll.insert_one({'name': 'Lascap'})
+            self.assertEqual(2, await async_client.db.coll.count_documents({}))
+
+        asyncio.run(_test())
+
+    @unittest.skipIf(
+        not hasattr(pymongo, 'AsyncMongoClient') if _HAVE_PYMONGO else True,
+        'pymongo has no AsyncMongoClient',
+    )
+    @mongomock.patch()
+    def test__async_client_error_new(self):
+        with self.assertRaises(ValueError):
+            pymongo.AsyncMongoClient('myserver.example.com', port=12345)
+
     @mongomock.patch(servers=(('server.example.com', 27017),))
     def test__tuple_server_host_and_port(self):
         objects = [{'votes': 1}, {'votes': 2}]
