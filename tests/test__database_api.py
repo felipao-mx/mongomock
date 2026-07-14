@@ -72,6 +72,26 @@ class DatabaseAPITest(TestCase):
         with self.assertRaises(NotImplementedError):
             self.database.command({'count': 'user'})
 
+    def test__command_build_info(self):
+        for command in ('buildInfo', 'buildinfo'):
+            result = self.database.command(command)
+            self.assertEqual(1, result['ok'])
+            self.assertEqual(mongomock.SERVER_VERSION, result['version'])
+
+    def test__command_hello(self):
+        result = self.database.command('hello')
+        self.assertEqual(1.0, result['ok'])
+        self.assertTrue(result['isWritablePrimary'])
+
+    def test__command_ismaster(self):
+        for command in ('ismaster', 'isMaster'):
+            result = self.database.command(command)
+            self.assertEqual(1.0, result['ok'])
+            self.assertTrue(result['ismaster'])
+
+    def test__write_concern(self):
+        self.assertEqual({}, self.database.write_concern.document)
+
     def test__repr(self):
         self.assertEqual(
             "Database(mongomock.MongoClient('localhost', 27017), 'somedb')", repr(self.database)

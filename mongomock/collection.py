@@ -2254,6 +2254,16 @@ class Cursor:
     def rewind(self):
         self._emitted = 0
 
+    def to_list(self, length=None):
+        if isinstance(length, int) and length < 1:
+            raise ValueError('to_list() length must be greater than 0')
+        docs = []
+        for doc in self:
+            docs.append(doc)
+            if length is not None and len(docs) == length:
+                break
+        return docs
+
     def sort(self, key_or_list, direction=None):
         sort = helpers.create_index_list(key_or_list, direction)
         if not sort:

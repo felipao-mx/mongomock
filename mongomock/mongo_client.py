@@ -8,6 +8,7 @@ from mongomock import codec_options as mongomock_codec_options
 from mongomock import ConfigurationError
 from mongomock import helpers
 from mongomock import read_preferences
+from mongomock.command_cursor import CommandCursor
 from mongomock.database import Database
 from mongomock.store import ServerStore
 
@@ -150,6 +151,16 @@ class MongoClient:
 
     def list_database_names(self):
         return self._store.list_created_database_names()
+
+    def list_databases(self, session=None, filter=None, **kwargs):
+        if session:
+            raise NotImplementedError('Mongomock does not handle sessions yet')
+        if filter:
+            raise NotImplementedError('list_databases filter is not implemented in Mongomock yet')
+        return CommandCursor(
+            {'name': name, 'sizeOnDisk': 0, 'empty': False}
+            for name in self.list_database_names()
+        )
 
     def drop_database(self, name_or_db):
         def drop_collections_for_db(_db):

@@ -30,6 +30,22 @@ class CommandCursor:
 
     __next__ = next
 
+    def try_next(self):
+        try:
+            return next(self._collection)
+        except StopIteration:
+            return None
+
+    def to_list(self, length=None):
+        if isinstance(length, int) and length < 1:
+            raise ValueError('to_list() length must be greater than 0')
+        docs = []
+        for doc in self:
+            docs.append(doc)
+            if length is not None and len(docs) == length:
+                break
+        return docs
+
     def __enter__(self):
         return self
 

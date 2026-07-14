@@ -253,6 +253,40 @@ class CollectionAPITest(TestCase):
         result4 = list(cursor4)
         self.assertEqual(result3, result4)
 
+    def test__cursor_to_list(self):
+        self.db.collection.insert_many([{'_id': i} for i in range(5)])
+        cursor = self.db.collection.find()
+        self.assertEqual([{'_id': 0}, {'_id': 1}], cursor.to_list(2))
+        self.assertEqual([{'_id': 2}, {'_id': 3}, {'_id': 4}], cursor.to_list())
+        self.assertEqual([], cursor.to_list())
+
+    def test__cursor_to_list_after_next(self):
+        self.db.collection.insert_many([{'_id': i} for i in range(3)])
+        cursor = self.db.collection.find()
+        self.assertEqual({'_id': 0}, next(cursor))
+        self.assertEqual([{'_id': 1}, {'_id': 2}], cursor.to_list())
+
+    def test__cursor_to_list_invalid_length(self):
+        with self.assertRaises(ValueError):
+            self.db.collection.find().to_list(0)
+        with self.assertRaises(ValueError):
+            self.db.collection.find().to_list(-1)
+
+    def test__command_cursor_to_list(self):
+        self.db.collection.insert_many([{'_id': i} for i in range(5)])
+        cursor = self.db.collection.aggregate([{'$sort': {'_id': 1}}])
+        self.assertEqual([{'_id': 0}, {'_id': 1}], cursor.to_list(2))
+        self.assertEqual([{'_id': 2}, {'_id': 3}, {'_id': 4}], cursor.to_list())
+        self.assertEqual([], cursor.to_list())
+        with self.assertRaises(ValueError):
+            self.db.collection.aggregate([]).to_list(0)
+
+    def test__command_cursor_try_next(self):
+        self.db.collection.insert_one({'_id': 1})
+        cursor = self.db.collection.aggregate([])
+        self.assertEqual({'_id': 1}, cursor.try_next())
+        self.assertIsNone(cursor.try_next())
+
     def test_cursor_returns_document_copies(self):
         obj = {'a': 1, 'b': 2}
         self.db.collection.insert_one(obj)

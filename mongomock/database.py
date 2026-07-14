@@ -12,6 +12,7 @@ from . import InvalidName
 from . import OperationFailure
 from .collection import Collection
 from .filtering import filter_applies
+from .write_concern import WriteConcern
 
 
 try:
@@ -91,6 +92,10 @@ class Database:
     @property
     def read_concern(self):
         return self._read_concern
+
+    @property
+    def write_concern(self):
+        return WriteConcern()
 
     def _get_created_collections(self):
         return self._store.list_created_collection_names()
@@ -237,6 +242,21 @@ class Database:
             command = {command: 1}
         if 'ping' in command:
             return {'ok': 1.0}
+        command_name = next(iter(command), '').lower()
+        if command_name == 'buildinfo':
+            server_info = self._client.server_info()
+            return dict(server_info, gitVersion='mock', modules=[])
+        if command_name in ('hello', 'ismaster'):
+            reply = {
+                'ok': 1.0,
+                'isWritablePrimary': True,
+                'maxWireVersion': 17,
+                'minWireVersion': 0,
+                'maxBsonObjectSize': 16777216,
+            }
+            if command_name == 'ismaster':
+                reply['ismaster'] = True
+            return reply
         # TODO(pascal): Differentiate NotImplementedError for valid commands
         # and OperationFailure if the command is not valid.
         raise NotImplementedError(
