@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [4.4.0] - tbd
 ### Added
+- Add `mongomock.AsyncMongoClient`, mirroring pymongo's async API, so async code (including ODMs
+  like Beanie 2) can be tested against mongomock. `mongomock.patch` now also patches
+  `pymongo.AsyncMongoClient` when available.
+- Add `Cursor.to_list`, `CommandCursor.to_list`, `CommandCursor.try_next`,
+  `MongoClient.list_databases` and the `buildInfo`, `hello` and `isMaster` database commands.
 - Add support for Python 3.13
 
 ### Changed

@@ -2,6 +2,7 @@ from typing import Any, Callable, Literal, Sequence, Tuple, Union
 from unittest import mock
 
 from bson.objectid import ObjectId as ObjectId
+from pymongo import AsyncMongoClient as AsyncMongoClient
 from pymongo import MongoClient as MongoClient
 from pymongo.collection import Collection as Collection
 from pymongo.database import Database as Database

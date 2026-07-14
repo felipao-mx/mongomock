@@ -29,6 +29,15 @@ dependencies = [
 combine = "coverage combine {args}"
 xml = "coverage xml"
 
+[envs.beanie]
+extra-dependencies = [
+  "beanie>=2,<3",
+  "pytest",
+]
+
+[envs.beanie.scripts]
+test = "pytest tests/test__beanie_integration.py -v"
+
 [envs.types]
 dependencies = [
   "mypy==1.11.*",
