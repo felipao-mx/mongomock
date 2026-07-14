@@ -98,6 +98,7 @@ from mongomock.__version__ import __version__
 
 __all__ = [
     '__version__',
+    'AsyncMongoClient',
     'Database',
     'DuplicateKeyError',
     'Collection',
@@ -113,6 +114,9 @@ __all__ = [
     'SERVER_VERSION',
 ]
 
+# These imports must stay below the error classes defined above: the imported modules
+# import mongomock back and rely on those attributes being defined already.
+from mongomock.asynchronous import AsyncMongoClient
 from mongomock.collection import Collection
 from mongomock.database import Database
 from mongomock.mongo_client import MongoClient

@@ -158,8 +158,7 @@ class MongoClient:
         if filter:
             raise NotImplementedError('list_databases filter is not implemented in Mongomock yet')
         return CommandCursor(
-            {'name': name, 'sizeOnDisk': 0, 'empty': False}
-            for name in self.list_database_names()
+            {'name': name, 'sizeOnDisk': 0, 'empty': False} for name in self.list_database_names()
         )
 
     def drop_database(self, name_or_db):
