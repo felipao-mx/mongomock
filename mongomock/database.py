@@ -7,10 +7,10 @@ from mongomock import helpers
 from mongomock import read_preferences
 from mongomock import store
 
-from . import CollectionInvalid
-from . import InvalidName
-from . import OperationFailure
 from .collection import Collection
+from .errors import CollectionInvalid
+from .errors import InvalidName
+from .errors import OperationFailure
 from .filtering import filter_applies
 from .write_concern import WriteConcern
 

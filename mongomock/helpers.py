@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import re
 import time
 import warnings
@@ -14,7 +15,13 @@ from urllib.parse import unquote_plus
 
 from packaging import version
 
-from mongomock import InvalidURI
+from mongomock.errors import InvalidURI
+
+
+# The version of the server faked by mongomock. Callers may patch it (as `mongomock.SERVER_VERSION`)
+# before creating connections to update the behavior of mongomock.
+# Keep the default version in sync with docker-compose.yml and travis.yml.
+SERVER_VERSION = os.getenv('MONGODB', '5.0.5')
 
 
 # Get ObjectId from bson if available or import a crafted one. This is not used

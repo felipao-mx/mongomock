@@ -3,13 +3,15 @@ import warnings
 
 from packaging import version
 
+# Read as mongomock.SERVER_VERSION (not imported by name) so mock.patch('mongomock.SERVER_VERSION',
+# ...) is honored, same as the utcnow pattern documented in README.rst.
 import mongomock
 from mongomock import codec_options as mongomock_codec_options
-from mongomock import ConfigurationError
 from mongomock import helpers
 from mongomock import read_preferences
 from mongomock.command_cursor import CommandCursor
 from mongomock.database import Database
+from mongomock.errors import ConfigurationError
 from mongomock.store import ServerStore
 
 

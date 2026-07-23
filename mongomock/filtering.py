@@ -8,7 +8,7 @@ from typing import ClassVar
 
 from sentinels import NOTHING
 
-from . import OperationFailure
+from .errors import OperationFailure
 from .helpers import ObjectId
 from .helpers import RE_TYPE
 
