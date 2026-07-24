@@ -116,10 +116,13 @@ class Database:
             'mongomock yet.'
         )
 
-    def list_collection_names(self, filter=None, session=None):
+    def list_collection_names(self, filter=None, session=None, comment=None, **unused_kwargs):
         """filter: only name field type with eq,ne or regex operator
 
         session: not supported
+        comment, and any other listCollections command option (e.g. nameOnly,
+        authorizedCollections), are accepted but have no effect: mongomock always
+        returns collection names only and has no authorization model.
         for supported operator please see _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS
         """
         field_name = 'name'

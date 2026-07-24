@@ -238,6 +238,17 @@ class DatabaseAPITest(TestCase):
         self.database.c.drop()
         self.assertEqual(set(self.database.list_collection_names()), {'a', 'b'})
 
+    def test__list_collection_names_accepts_listcollections_kwargs(self):
+        self.database.create_collection('a')
+        self.assertEqual(
+            {'a'},
+            set(
+                self.database.list_collection_names(
+                    comment='why not', authorizedCollections=True, nameOnly=True
+                )
+            ),
+        )
+
     def test__list_collections(self):
         self.database.create_collection('a')
 
