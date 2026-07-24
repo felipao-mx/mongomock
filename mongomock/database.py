@@ -7,11 +7,12 @@ from mongomock import helpers
 from mongomock import read_preferences
 from mongomock import store
 
-from . import CollectionInvalid
-from . import InvalidName
-from . import OperationFailure
 from .collection import Collection
+from .errors import CollectionInvalid
+from .errors import InvalidName
+from .errors import OperationFailure
 from .filtering import filter_applies
+from .write_concern import WriteConcern
 
 
 try:
@@ -92,6 +93,10 @@ class Database:
     def read_concern(self):
         return self._read_concern
 
+    @property
+    def write_concern(self):
+        return WriteConcern()
+
     def _get_created_collections(self):
         return self._store.list_created_collection_names()
 
@@ -111,10 +116,13 @@ class Database:
             'mongomock yet.'
         )
 
-    def list_collection_names(self, filter=None, session=None):
+    def list_collection_names(self, filter=None, session=None, comment=None, **unused_kwargs):
         """filter: only name field type with eq,ne or regex operator
 
         session: not supported
+        comment, and any other listCollections command option (e.g. nameOnly,
+        authorizedCollections), are accepted but have no effect: mongomock always
+        returns collection names only and has no authorization model.
         for supported operator please see _LIST_COLLECTION_FILTER_ALLOWED_OPERATORS
         """
         field_name = 'name'
@@ -237,6 +245,21 @@ class Database:
             command = {command: 1}
         if 'ping' in command:
             return {'ok': 1.0}
+        command_name = next(iter(command), '').lower()
+        if command_name == 'buildinfo':
+            server_info = self._client.server_info()
+            return dict(server_info, gitVersion='mock', modules=[])
+        if command_name in ('hello', 'ismaster'):
+            reply = {
+                'ok': 1.0,
+                'isWritablePrimary': True,
+                'maxWireVersion': 17,
+                'minWireVersion': 0,
+                'maxBsonObjectSize': 16777216,
+            }
+            if command_name == 'ismaster':
+                reply['ismaster'] = True
+            return reply
         # TODO(pascal): Differentiate NotImplementedError for valid commands
         # and OperationFailure if the command is not valid.
         raise NotImplementedError(

@@ -18,11 +18,13 @@ import pytz
 from packaging import version
 from sentinels import NOTHING
 
+# Read as mongomock.SERVER_VERSION (not imported by name) so mock.patch('mongomock.SERVER_VERSION',
+# ...) is honored, same as the utcnow pattern documented in README.rst.
 import mongomock
 from mongomock import command_cursor
 from mongomock import filtering
 from mongomock import helpers
-from mongomock import OperationFailure
+from mongomock.errors import OperationFailure
 
 
 try:

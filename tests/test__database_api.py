@@ -72,6 +72,26 @@ class DatabaseAPITest(TestCase):
         with self.assertRaises(NotImplementedError):
             self.database.command({'count': 'user'})
 
+    def test__command_build_info(self):
+        for command in ('buildInfo', 'buildinfo'):
+            result = self.database.command(command)
+            self.assertEqual(1, result['ok'])
+            self.assertEqual(mongomock.SERVER_VERSION, result['version'])
+
+    def test__command_hello(self):
+        result = self.database.command('hello')
+        self.assertEqual(1.0, result['ok'])
+        self.assertTrue(result['isWritablePrimary'])
+
+    def test__command_ismaster(self):
+        for command in ('ismaster', 'isMaster'):
+            result = self.database.command(command)
+            self.assertEqual(1.0, result['ok'])
+            self.assertTrue(result['ismaster'])
+
+    def test__write_concern(self):
+        self.assertEqual({}, self.database.write_concern.document)
+
     def test__repr(self):
         self.assertEqual(
             "Database(mongomock.MongoClient('localhost', 27017), 'somedb')", repr(self.database)
@@ -217,6 +237,17 @@ class DatabaseAPITest(TestCase):
 
         self.database.c.drop()
         self.assertEqual(set(self.database.list_collection_names()), {'a', 'b'})
+
+    def test__list_collection_names_accepts_listcollections_kwargs(self):
+        self.database.create_collection('a')
+        self.assertEqual(
+            {'a'},
+            set(
+                self.database.list_collection_names(
+                    comment='why not', authorizedCollections=True, nameOnly=True
+                )
+            ),
+        )
 
     def test__list_collections(self):
         self.database.create_collection('a')

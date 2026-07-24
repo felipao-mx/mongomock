@@ -101,6 +101,27 @@ mongomock.patch (NOTE: you should use :code:`pymongo.MongoClient(...)` rather th
     ... verify client.db.collection
 
 
+Async support
+-------------
+Mongomock also provides :code:`mongomock.AsyncMongoClient`, mirroring pymongo's
+:code:`AsyncMongoClient` API (available in pymongo 4.9+): the same methods are coroutines or
+synchronous as in pymongo, so code written for the async driver runs against the mock unchanged.
+It supports the same subset of MongoDB features as the synchronous mongomock client, and can back
+async ODMs such as Beanie:
+
+.. code-block:: python
+
+  async def test_increase_votes():
+      collection = mongomock.AsyncMongoClient().db.collection
+      await collection.insert_one({'votes': 1})
+      await increase_votes(collection)
+      document = await collection.find_one()
+      assert document['votes'] == 2
+
+When pymongo provides :code:`AsyncMongoClient`, :code:`mongomock.patch` patches it as well, and
+sync and async clients connecting to the same server share the same data.
+
+
 Important Note About Project Status & Development
 -------------------------------------------------
 
@@ -114,8 +135,8 @@ so feel free to open issues and/or pull requests and help the project out!
 
 **NOTE**: We don't include pymongo functionality as "stubs" or "placeholders". Since this library is
 used to validate production code, it is unacceptable to behave differently than the real pymongo
-implementation. In such cases it is better to throw ``NotImplementedError`` than implement a modified
-version of the original behavior.
+implementation. In such cases it is better to throw ``NotImplementedError`` than implement a
+modified version of the original behavior.
 
 Upgrading to Pymongo v4
 -----------------------
@@ -148,7 +169,7 @@ To download, setup and perfom tests, run the following commands on Mac / Linux:
  $ cd mongomock
  $ hatch test
 
-Alternatively, ``docker-compose`` can be used to simplify dependency management for local 
+Alternatively, ``docker-compose`` can be used to simplify dependency management for local
 development:
 
 .. code-block:: console

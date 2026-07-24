@@ -155,6 +155,20 @@ class MongoClientApiTest(unittest.TestCase):
         client.one_db.my_collec.insert_one({})
         self.assertEqual(['one_db'], client.list_database_names())
 
+    def test_list_databases(self):
+        client = mongomock.MongoClient()
+        self.assertEqual([], list(client.list_databases()))
+
+        client.one_db.my_collec.insert_one({})
+        self.assertEqual(
+            [{'name': 'one_db', 'sizeOnDisk': 0, 'empty': False}], list(client.list_databases())
+        )
+
+        with self.assertRaises(NotImplementedError):
+            client.list_databases(session=1)
+        with self.assertRaises(NotImplementedError):
+            client.list_databases(filter={'name': 'one_db'})
+
     def test_client_implements_context_managers(self):
         with mongomock.MongoClient() as client:
             client.one_db.my_collec.insert_one({})

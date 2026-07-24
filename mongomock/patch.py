@@ -1,6 +1,7 @@
 import time
 from unittest import mock
 
+from .asynchronous import AsyncMongoClient
 from .mongo_client import MongoClient
 
 
@@ -26,7 +27,7 @@ def _parse_any_host(host, default_port=27017):
 
 
 def patch(servers='localhost', on_new='error'):
-    """Patch pymongo.MongoClient.
+    """Patch pymongo.MongoClient and, when available, pymongo.AsyncMongoClient.
 
     This will patch the class MongoClient and use mongomock to mock MongoDB
     servers. It keeps a consistant state of servers across multiple clients so
@@ -40,7 +41,10 @@ def patch(servers='localhost', on_new='error'):
     client.db.coll.find_one()
     ```
 
-    The data is persisted as long as the patch lives.
+    The data is persisted as long as the patch lives, and shared between sync and async
+    clients connecting to the same server. Note that, like pymongo.mongo_client.MongoClient,
+    code importing AsyncMongoClient from pymongo.asynchronous.mongo_client directly is not
+    patched.
 
     Args:
         on_new: Behavior when accessing a new server (not in servers):
@@ -53,43 +57,73 @@ def patch(servers='localhost', on_new='error'):
     """
 
     PyMongoClient = None if _IMPORT_PYMONGO_ERROR else pymongo.MongoClient  # noqa: N806
+    PyMongoAsyncClient = (  # noqa: N806
+        None if _IMPORT_PYMONGO_ERROR else getattr(pymongo, 'AsyncMongoClient', None)
+    )
 
     persisted_clients = {}
     parsed_servers = set()
     for server in servers if isinstance(servers, (list, tuple)) else [servers]:
         parsed_servers.update(_parse_any_host(server))
 
-    def _create_persistent_client(*args, **kwargs):
-        if _IMPORT_PYMONGO_ERROR:
-            raise _IMPORT_PYMONGO_ERROR  # pylint: disable=raising-bad-type
-
-        client = MongoClient(*args, **kwargs)
-
+    def _attach_persistent_store(client):
+        """Share the persisted store for the client's address, if the server is known."""
         try:
             persisted_client = persisted_clients[client.address]
             client._store = persisted_client._store
-            return client
+            return True
         except KeyError:
             pass
 
         if client.address in parsed_servers or on_new == 'create':
             persisted_clients[client.address] = client
-            return client
+            return True
 
+        return False
+
+    def _handle_unknown_server(address, pymongo_client_class, args, kwargs):
         if on_new == 'timeout':
             # TODO(pcorpet): Only wait when trying to access the server's data.
             time.sleep(kwargs.get('serverSelectionTimeoutMS', 30000))
             raise pymongo.errors.ServerSelectionTimeoutError(
-                '%s:%d: [Errno 111] Connection refused' % client.address
+                '%s:%d: [Errno 111] Connection refused' % address
             )
 
         if on_new == 'pymongo':
-            return PyMongoClient(*args, **kwargs)
+            return pymongo_client_class(*args, **kwargs)
 
-        raise ValueError(f'MongoDB server {client.address}:{parsed_servers} does not exist.')
+        raise ValueError(f'MongoDB server {address}:{parsed_servers} does not exist.')
+
+    def _create_persistent_client(*args, **kwargs):
+        if _IMPORT_PYMONGO_ERROR:
+            raise _IMPORT_PYMONGO_ERROR  # pylint: disable=raising-bad-type
+
+        client = MongoClient(*args, **kwargs)
+        if _attach_persistent_store(client):
+            return client
+        return _handle_unknown_server(client.address, PyMongoClient, args, kwargs)
+
+    def _create_persistent_async_client(*args, **kwargs):
+        if _IMPORT_PYMONGO_ERROR:
+            raise _IMPORT_PYMONGO_ERROR  # pylint: disable=raising-bad-type
+
+        client = AsyncMongoClient(*args, **kwargs)
+        if _attach_persistent_store(client._delegate):
+            return client
+        return _handle_unknown_server(client.address, PyMongoAsyncClient, args, kwargs)
 
     class _PersistentClient:
         def __new__(cls, *args, **kwargs):
             return _create_persistent_client(*args, **kwargs)
 
+    class _PersistentAsyncClient:
+        def __new__(cls, *args, **kwargs):
+            return _create_persistent_async_client(*args, **kwargs)
+
+    if PyMongoAsyncClient is not None:
+        return mock.patch.multiple(
+            'pymongo',
+            MongoClient=_PersistentClient,
+            AsyncMongoClient=_PersistentAsyncClient,
+        )
     return mock.patch('pymongo.MongoClient', _PersistentClient)
